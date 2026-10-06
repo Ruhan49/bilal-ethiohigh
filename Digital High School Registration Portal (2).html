@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EthioHigh Digital Registration & Administration System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-full flex flex-col antialiased">
+
+    <!-- Top Navigation / Header -->
+    <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('home')">
+                <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-xl font-bold shadow-inner border border-white/20">
+                    🏫
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg leading-tight">вιℓαℓ EthioHigh Remote Portal</h1>
+                    <p class="text-xs text-indigo-200">Digital Registration & Enrollment System</p>
+                </div>
+            </div>
+            <!-- Quick Role Switcher / Navigation -->
+            <div class="flex items-center space-x-2">
+                <button onclick="switchView('student')" id="navStudentBtn" class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-indigo-800 text-white hover:bg-indigo-900 transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-user-graduate"></i>
+                    <span>Student Portal</span>
+                </button>
+                <button onclick="switchView('director')" id="navDirectorBtn" class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-white/10 hover:bg-white/20 text-indigo-100 transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-user-tie"></i>
+                    <span>Director Dashboard</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dynamic View Container -->
+    <main id="appContainer" class="flex-1 overflow-y-auto">
+        <!-- Content will be injected dynamically via JavaScript -->
+    </main>
+
+    <!-- Replaced standard alert with custom clean modal -->
+    <div id="customModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all scale-95 opacity-0 duration-200" id="modalBox">
+            <div id="modalIcon" class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl mb-4 mx-auto">
+                <i class="fa-solid fa-circle-info"></i>
+            </div>
+            <h3 id="modalTitle" class="text-lg font-bold text-slate-900 text-center mb-2">Notification</h3>
+            <p id="modalMessage" class="text-sm text-slate-600 text-center mb-6">Message goes here.</p>
+            <div class="flex justify-center space-x-3">
+                <button onclick="closeModal()" class="w-full bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">OK, Understood</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- IN-MEMORY APPLICATION STATE & INITIAL SEED DATA ---
+        let state = {
+            currentView: 'home', // 'home', 'student', 'director'
+            studentTab: 'register', // 'register', 'status', 'announcements', 'profile'
+            directorTab: 'dashboard', // 'dashboard', 'applications', 'students', 'classes', 'announcements', 'payments'
+            
+            // School Subscription State
+            schoolSubscription: {
+                paid: true,
+                amount: 500,
+                reference: 'ETH-SUB-2026-9842',
+                date: '2026-09-10'
+            },
+
+            // Announcements list
+            announcements: [
+                { id: 1, title: 'Academic Year Begins October 20', content: 'Classes will officially commence on Monday, October 20, 2026. All registered students must report to campus or log in online.', date: 'Oct 6, 2026', priority: 'high' },
+                { id: 2, title: 'Telebirr Payment Guidelines', content: 'Use merchant code 882194 (EthioHigh Official) for registration fee payments and attach the screenshot receipt.', date: 'Oct 4, 2026', priority: 'normal' }
+            ],
+
+            // Student Applications & Active Student Records
+            applications: [
+                {
+                    id: 'APP-9012',
+                    fullName: 'Abebe Kebede',
+                    dob: '2009-03-12',
+                    gender: 'Male',
+                    parentName: 'Kebede Tadesse',
+                    phone: '+251911223344',
+                    address: 'Adama Rural Kebele 04',
+                    previousSchool: 'Adama Junior Primary',
+                    gradeApplying: 'Grade 9',
+                    stream: 'N/A',
+                    docUploaded: true,
+                    docName: 'grade_8_ministry_certificate.pdf',
+                    paymentStatus: 'Confirmed',
+                    paymentRef: 'TXN98327103',
+                    status: 'Approved', // Pending, Approved, Rejected
+                    assignedClass: 'Grade 9A',
+                    submissionDate: '2026-10-01'
+                },
+                {
+                    id: 'APP-9013',
+                    fullName: 'Tigist Alemayehu',
+                    dob: '2009-07-22',
+                    gender: 'Female',
+                    parentName: 'Alemayehu Bekele',
+                    phone: '+251922334455',
+                    address: 'Bishoftu Outskirts',
+                    previousSchool: 'Bishoftu No. 2 Primary',
+                    gradeApplying: 'Grade 11',
+                    stream: 'Natural Science',
+                    docUploaded: true,
+                    docName: 'grade_10_result_slip.pdf',
+                    paymentStatus: 'Pending',
+                    paymentRef: '',
+                    status: 'Pending',
+                    assignedClass: 'Grade 11 Nat A',
+                    submissionDate: '2026-10-05'
+                },
+                {
+                    id: 'APP-9014',
+                    fullName: 'Dawit Mekonnen',
+                    dob: '2008-01-15',
+                    gender: 'Male',
+                    parentName: 'Mekonnen Tadesse',
+                    phone: '+251933445566',
+                    address: 'Mojo Rural District',
+                    previousSchool: 'Mojo Primary School',
+                    gradeApplying: 'Grade 12',
+                    stream: 'Social Science',
+                    docUploaded: true,
+                    docName: 'grade_11_transcript.pdf',
+                    paymentStatus: 'Confirmed',
+                    paymentRef: 'TXN55412998',
+                    status: 'Approved',
+                    assignedClass: 'Grade 12 Soc A',
+                    submissionDate: '2026-10-02'
+                }
+            ],
+
+            // Active student registry capacity simulation (Max 45 per class)
+            classesData: {
+                'Grade 9A': { capacity: 45, enrolled: 45, full: true },
+                'Grade 9B': { capacity: 45, enrolled: 32, full: false },
+                'Grade 10A': { capacity: 45, enrolled: 45, full: true },
+                'Grade 10B': { capacity: 45, enrolled: 28, full: false },
+                'Grade 11 Nat A': { capacity: 45, enrolled: 42, full: false },
+                'Grade 11 Soc A': { capacity: 45, enrolled: 39, full: false },
+                'Grade 12 Nat A': { capacity: 45, enrolled: 35, full: false },
+                'Grade 12 Soc A': { capacity: 45, enrolled: 41, full: false }
+            },
+
+            // Current logged-in student draft session
+            studentForm: {
+                fullName: '',
+                dob: '',
+                gender: 'Male',
+                parentName: '',
+                phone: '',
+                address: '',
+                previousSchool: '',
+                gradeApplying: 'Grade 9',
+                stream: 'Natural Science',
+                docName: '',
+                paymentRef: ''
+            }
+        };
+
+        // --- CORE UI CONTROLLER & VIEW ROUTER ---
+        function switchView(view) {
+            state.currentView = view;
+            
+            // Update nav buttons
+            const studentBtn = document.getElementById('navStudentBtn');
+            const directorBtn = document.getElementById('navDirectorBtn');
+            
+            if (view === 'student') {
+                studentBtn.className = "px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-white text-indigo-700 shadow transition flex items-center space-x-1.5";
+                directorBtn.className = "px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-white/10 hover:bg-white/20 text-indigo-100 transition flex items-center space-x-1.5";
+                renderStudentPortal();
+            } else if (view === 'director') {
+                directorBtn.className = "px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-white text-indigo-700 shadow transition flex items-center space-x-1.5";
+                studentBtn.className = "px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-white/10 hover:bg-white/20 text-indigo-100 transition flex items-center space-x-1.5";
+                renderDirectorPortal();
+            } else {
+                studentBtn.className = "px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-indigo-800 text-white hover:bg-indigo-900 transition flex items-center space-x-1.5";
+                directorBtn.className = "px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-white/10 hover:bg-white/20 text-indigo-100 transition flex items-center space-x-1.5";
+                renderHome();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- CUSTOM MODAL HELPER ---
+        function showModal(title, message, isSuccess = true) {
+            const modal = document.getElementById('customModal');
+            const box = document.getElementById('modalBox');
+            const titleEl = document.getElementById('modalTitle');
+            const msgEl = document.getElementById('modalMessage');
+            const iconEl = document.getElementById('modalIcon');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+            
+            if (isSuccess) {
+                iconEl.className = "w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl mb-4 mx-auto";
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            } else {
+                iconEl.className = "w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xl mb-4 mx-auto";
+                iconEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                box.classList.remove('scale-95', 'opacity-0');
+                box.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('customModal');
+            const box = document.getElementById('modalBox');
+            box.classList.remove('scale-100', 'opacity-100');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        // --- RENDER LANDING / HOME VIEW ---
+        function renderHome() {
+            const container = document.getElementById('appContainer');
+            container.innerHTML = `
+                <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+                    <!-- Hero Section -->
+                    <div class="bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 rounded-3xl text-white p-6 sm:p-12 shadow-2xl relative overflow-hidden mb-12">
+                        <div class="absolute -right-10 -bottom-10 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                        <div class="max-w-2xl relative z-10">
+                            <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 mb-4">
+                                <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                                <span>Official Remote High School System</span>
+                            </span>
+                            <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight mb-4">
+                                Skip the Travel. Register Online.
+                            </h2>
+                            <p class="text-indigo-200 text-sm sm:text-base mb-8 leading-relaxed">
+                                Designed specifically for remote and rural communities. Securely submit your credentials, pay via Telebirr or bank transfer, track your application status, and receive instant digital enrollment receipts directly from your mobile phone.
+                            </p>
+                            <div class="flex flex-wrap gap-4">
+                                <button onclick="switchView('student')" class="bg-white text-indigo-900 font-bold px-6 py-3.5 rounded-2xl hover:bg-indigo-50 transition shadow-lg flex items-center space-x-2">
+                                    <i class="fa-solid fa-user-plus"></i>
+                                    <span>Start Student Registration</span>
+                                </button>
+                                <button onclick="switchView('director')" class="bg-indigo-800/80 hover:bg-indigo-800 text-white font-semibold px-6 py-3.5 rounded-2xl border border-indigo-600 transition flex items-center space-x-2">
+                                    <i class="fa-solid fa-lock"></i>
+                                    <span>Director Portal Login</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Features Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+                            <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl font-bold mb-4">
+                                <i class="fa-solid fa-mobile-screen"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900 mb-2">Mobile-First Workflow</h3>
+                            <p class="text-sm text-slate-600">Built for smartphones so students in distant areas can register, upload documents, and track approval without needing a PC.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl font-bold mb-4">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900 mb-2">Smart 45-Student Capacity</h3>
+                            <p class="text-sm text-slate-600">Automated class allocation. When Grade 9A hits 45 students, new applicants automatically roll over into Grade 9B with real-time badges.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+                            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl font-bold mb-4">
+                                <i class="fa-solid fa-graduation-cap"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900 mb-2">Stream Locking & Progression</h3>
+                            <p class="text-sm text-slate-600">Grade 11 students choose Natural or Social Science, and the system securely remembers their stream for seamless Grade 12 continuation.</p>
+                        </div>
+                    </div>
+
+                    <!-- School Subscription Status Banner -->
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-emerald-600 text-white rounded-xl flex items-center justify-center text-xl font-bold shrink-0">
+                                <i class="fa-solid fa-receipt"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-emerald-900">Active School Platform Subscription</h4>
+                                <p class="text-xs text-emerald-700">Official System License • 500 ETB Paid • Ref: ${state.schoolSubscription.reference}</p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 bg-emerald-200 text-emerald-800 text-xs font-bold rounded-full uppercase tracking-wider">
+                            🟢 Fully Operational
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- STUDENT PORTAL CONTROLLER ---
+        function renderStudentPortal() {
+            const container = document.getElementById('appContainer');
+            
+            container.innerHTML = `
+                <div class="max-w-5xl mx-auto px-4 py-6 sm:px-6">
+                    <!-- Student Navigation Tabs -->
+                    <div class="flex overflow-x-auto hide-scrollbar space-x-2 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200 mb-6">
+                        <button onclick="setStudentTab('register')" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center space-x-2 ${state.studentTab === 'register' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}">
+                            <i class="fa-solid fa-file-pen"></i>
+                            <span>1. New Application</span>
+                        </button>
+                        <button onclick="setStudentTab('status')" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center space-x-2 ${state.studentTab === 'status' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>2. Status & Receipts</span>
+                        </button>
+                        <button onclick="setStudentTab('announcements')" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center space-x-2 ${state.studentTab === 'announcements' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}">
+                            <i class="fa-solid fa-bullhorn"></i>
+                            <span>📢 Announcements</span>
+                        </button>
+                        <button onclick="setStudentTab('profile')" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center space-x-2 ${state.studentTab === 'profile' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}">
+                            <i class="fa-solid fa-user"></i>
+                            <span>Student Profile</span>
+                        </button>
+                    </div>
+
+                    <!-- Dynamic Student Tab Content -->
+                    <div id="studentContentArea">
+                        ${getStudentTabContent()}
+                    </div>
+                </div>
+            `;
+        }
+
+        function setStudentTab(tab) {
+            state.studentTab = tab;
+            renderStudentPortal();
+        }
+
+        function getStudentTabContent() {
+            if (state.studentTab === 'register') {
+                return `
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8">
+                        <div class="mb-6 pb-4 border-b border-slate-100">
+                            <h3 class="text-xl font-bold text-slate-900">Online Student Registration Form</h3>
+                            <p class="text-sm text-slate-500">Fill in your exact details to submit your remote school application.</p>
+                        </div>
+                        <form onsubmit="handleStudentSubmit(event)" class="space-y-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-2">Full Name (As per birth certificate)</label>
+                                    <input type="text" id="regFullName" required value="${state.studentForm.fullName}" placeholder="e.g. Samuel Kebede" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-2">Date of Birth</label>
+                                    <input type="date" id="regDob" required value="${state.studentForm.dob}" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-2">Gender</label>
+                                    <select id="regGender" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-2">Parent / Guardian Full Name</label>
+                                    <input type="text" id="regParentName" required value="${state.studentForm.parentName}" placeholder="e.g. Ato Kebede Tadesse" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-2">Phone Number (Mobile)</label>
+                                    <input type="tel" id="regPhone" required value="${state.studentForm.phone}" placeholder="e.g. +251 911 223 344" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-2">Residential Address / Kebele</label>
+                                    <input type="text" id="regAddress" required value="${state.studentForm.address}" placeholder="e.g. Adama Rural Kebele 02" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-2">Previous School Attended</label>
+                                    <input type="text" id="regPreviousSchool" required value="${state.studentForm.previousSchool}" placeholder="e.g. Melka Primary School" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-2">Grade Applying For</label>
+                                    <select id="regGradeApplying" onchange="toggleStreamField()" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                                        <option value="Grade 9">Grade 9</option>
+                                        <option value="Grade 10">Grade 10</option>
+                                        <option value="Grade 11">Grade 11 (Specialization)</option>
+                                        <option value="Grade 12">Grade 12 (Stream Continuation)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Grade 11/12 Stream Selection (Specialization) -->
+                            <div id="streamSection" class="p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl hidden">
+                                <label class="block text-xs font-bold text-indigo-900 uppercase mb-2">Select Specialization Stream (Locked for Grade 11 & 12)</label>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <label class="flex items-center space-x-3 p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-500 transition">
+                                        <input type="radio" name="streamChoice" value="Natural Science" checked class="text-indigo-600 focus:ring-indigo-500">
+                                        <div>
+                                            <span class="block text-sm font-bold text-slate-900">🔬 Natural Science</span>
+                                            <span class="text-xs text-slate-500">Physics, Chemistry, Biology</span>
+                                        </div>
+                                    </label>
+                                    <label class="flex items-center space-x-3 p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-500 transition">
+                                        <input type="radio" name="streamChoice" value="Social Science" class="text-indigo-600 focus:ring-indigo-500">
+                                        <div>
+                                            <span class="block text-sm font-bold text-slate-900">📚 Social Science</span>
+                                            <span class="text-xs text-slate-500">History, Geography, Economics</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Document Upload & Payment Section -->
+                            <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                                <h4 class="font-bold text-slate-900 text-sm">Document Verification & Registration Fee Payment</h4>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Upload Previous Transcript / Ministry Certificate</label>
+                                        <input type="file" id="regDocFile" required class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Telebirr / Bank Transaction Reference</label>
+                                        <input type="text" id="regPaymentRef" required placeholder="e.g. TXN48920194" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 text-sm">
+                                        <p class="text-[11px] text-slate-500 mt-1">Official Merchant: <b>882194 (EthioHigh)</b> - Fee: 250 ETB</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-xl shadow-indigo-200 transition flex items-center justify-center space-x-2 text-base">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>Submit Remote Registration Application</span>
+                            </button>
+                        </form>
+                    </div>
+                `;
+            } else if (state.studentTab === 'status') {
+                return `
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8">
+                            <h3 class="text-xl font-bold text-slate-900 mb-2">My Application & Enrollment Status</h3>
+                            <p class="text-sm text-slate-500 mb-6">Track your document verification, director approval, and digital receipt in real time.</p>
+                            
+                            <div class="space-y-4">
+                                ${state.applications.map(app => `
+                                    <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                        <div class="space-y-1">
+                                            <div class="flex items-center space-x-2">
+                                                <span class="font-bold text-slate-900 text-base">${app.fullName}</span>
+                                                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${app.status === 'Approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                                                    ${app.status === 'Approved' ? '🟢 Approved & Enrolled' : '🟡 Pending Review'}
+                                                </span>
+                                            </div>
+                                            <p class="text-xs text-slate-600">Application ID: <b>${app.id}</b> • Applying For: <b>${app.gradeApplying}</b> ${app.stream !== 'N/A' ? '• Stream: ' + app.stream : ''}</p>
+                                            <p class="text-xs text-slate-500">Assigned Class: <span class="font-semibold text-indigo-600">${app.assignedClass}</span> • Payment: <span class="font-semibold text-emerald-600">${app.paymentStatus} (${app.paymentRef})</span></p>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            ${app.status === 'Approved' ? `
+                                                <button onclick="downloadReceipt('${app.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow transition flex items-center space-x-1.5">
+                                                    <i class="fa-solid fa-download"></i>
+                                                    <span>Download Digital Receipt</span>
+                                                </button>
+                                            ` : `
+                                                <span class="text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 font-medium">Awaiting Director Verification</span>
+                                            `}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (state.studentTab === 'announcements') {
+                return `
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8">
+                            <h3 class="text-xl font-bold text-slate-900 mb-2">📢 Official School Announcements</h3>
+                            <p class="text-sm text-slate-500 mb-6">Important updates published directly by the school director.</p>
+                            
+                            <div class="space-y-4">
+                                ${state.announcements.map(ann => `
+                                    <div class="p-5 bg-indigo-50/50 border border-indigo-100 rounded-2xl relative">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h4 class="font-bold text-slate-900 text-base">${ann.title}</h4>
+                                            <span class="text-xs font-semibold text-indigo-600 bg-white px-2.5 py-1 rounded-lg border border-indigo-100">${ann.date}</span>
+                                        </div>
+                                        <p class="text-sm text-slate-600 leading-relaxed">${ann.content}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 max-w-xl mx-auto">
+                        <div class="text-center mb-6">
+                            <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
+                                🎓
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900">Student Digital Profile</h3>
+                            <p class="text-xs text-slate-500">Verified Remote Student Account</p>
+                        </div>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between p-3 bg-slate-50 rounded-xl">
+                                <span class="text-slate-500">Full Name</span>
+                                <span class="font-semibold text-slate-900">Abebe Kebede</span>
+                            </div>
+                            <div class="flex justify-between p-3 bg-slate-50 rounded-xl">
+                                <span class="text-slate-500">Student ID</span>
+                                <span class="font-semibold text-indigo-600">ETH-2026-8841</span>
+                            </div>
+                            <div class="flex justify-between p-3 bg-slate-50 rounded-xl">
+                                <span class="text-slate-500">Enrolled Grade & Class</span>
+                                <span class="font-semibold text-slate-900">Grade 9A (Assigned)</span>
+                            </div>
+                            <div class="flex justify-between p-3 bg-slate-50 rounded-xl">
+                                <span class="text-slate-500">Phone Number</span>
+                                <span class="font-semibold text-slate-900">+251 911 223 344</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function toggleStreamField() {
+            const grade = document.getElementById('regGradeApplying').value;
+            const streamSec = document.getElementById('streamSection');
+            if (grade === 'Grade 11' || grade === 'Grade 12') {
+                streamSec.classList.remove('hidden');
+            } else {
+                streamSec.classList.add('hidden');
+            }
+        }
+
+        function handleStudentSubmit(e) {
+            e.preventDefault();
+            const fullName = document.getElementById('regFullName').value;
+            const dob = document.getElementById('regDob').value;
+            const gender = document.getElementById('regGender').value;
+            const parentName = document.getElementById('regParentName').value;
+            const phone = document.getElementById('regPhone').value;
+            const address = document.getElementById('regAddress').value;
+            const previousSchool = document.getElementById('regPreviousSchool').value;
+            const gradeApplying = document.getElementById('regGradeApplying').value;
+            const fileInput = document.getElementById('regDocFile');
+            const paymentRef = document.getElementById('regPaymentRef').value;
+            
+            let stream = 'N/A';
+            if (gradeApplying === 'Grade 11' || gradeApplying === 'Grade 12') {
+                const radios = document.getElementsByName('streamChoice');
+                for (let r of radios) {
+                    if (r.checked) stream = r.value;
+                }
+            }
+
+            // Automatic class assignment logic with 45-student limit check
+            let assignedClass = 'Grade 9B';
+            if (gradeApplying === 'Grade 9') {
+                assignedClass = state.classesData['Grade 9A'].full ? 'Grade 9B' : 'Grade 9A';
+            } else if (gradeApplying === 'Grade 10') {
+                assignedClass = state.classesData['Grade 10A'].full ? 'Grade 10B' : 'Grade 10A';
+            } else if (gradeApplying === 'Grade 11') {
+                assignedClass = stream === 'Natural Science' ? 'Grade 11 Nat A' : 'Grade 11 Soc A';
+            } else if (gradeApplying === 'Grade 12') {
+                assignedClass = stream === 'Natural Science' ? 'Grade 12 Nat A' : 'Grade 12 Soc A';
+            }
+
+            const newApp = {
+                id: 'APP-' + Math.floor(1000 + Math.random() * 9000),
+                fullName,
+                dob,
+                gender,
+                parentName,
+                phone,
+                address,
+                previousSchool,
+                gradeApplying,
+                stream,
+                docUploaded: true,
+                docName: fileInput.files[0] ? fileInput.files[0].name : 'document.pdf',
+                paymentStatus: 'Confirmed',
+                paymentRef,
+                status: 'Pending',
+                assignedClass,
+                submissionDate: new Date().toISOString().split('T')[0]
+            };
+
+            state.applications.unshift(newApp);
+            showModal('Registration Submitted!', `Your application has been received successfully and assigned to ${assignedClass}. Awaiting Director approval and document review.`);
+            state.studentTab = 'status';
+            renderStudentPortal();
+        }
+
+        function downloadReceipt(appId) {
+            const app = state.applications.find(a => a.id === appId);
+            if (!app) return;
+            showModal('Digital Receipt Downloaded', `Official Enrollment & Payment Receipt for ${app.fullName} (${app.assignedClass}) downloaded successfully as PDF.`);
+        }
+
+        // --- DIRECTOR / ADMIN PORTAL CONTROLLER ---
+        function renderDirectorPortal() {
+            const container = document.getElementById('appContainer');
+            
+            container.innerHTML = `
+                <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+                    <!-- Director Header Banner -->
+                    <div class="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div>
+                            <span class="px-3 py-1 bg-indigo-500/30 text-indigo-300 text-xs font-semibold rounded-full border border-indigo-500/30">
+                                👨‍💼 Director & Administrator Portal
+                            </span>
+                            <h2 class="text-2xl sm:text-3xl font-extrabold mt-2">EthioHigh Management Dashboard</h2>
+                            <p class="text-xs sm:text-sm text-slate-400">Review remote applications, verify payments, manage 45-student capacities, and publish announcements.</p>
+                        </div>
+                        <div class="flex items-center space-x-3 bg-slate-800 p-3 rounded-2xl border border-slate-700">
+                            <div class="text-right">
+                                <p class="text-xs text-slate-400">School Subscription</p>
+                                <p class="text-sm font-bold text-emerald-400">500 ETB Active</p>
+                            </div>
+                            <div class="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center font-bold">
+                                ✓
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Director Navigation Tabs -->
+                    <div class="flex overflow-x-auto hide-scrollbar space-x-2 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200 mb-6">
+                        <button onclick="setDirectorTab('dashboard')" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center space-x-2 ${state.directorTab === 'dashboard' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}">
+                            <i class="fa-solid fa-chart-pie"></i>
+                            <span>Overview Analytics</span>
+                        </button>
+                        <button onclick="setDirectorTab('applications')" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center space-x-2 ${state.directorTab === 'applications' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}">
+                            <i class="fa-solid fa-file-shield"></i>
+                            <span>Applications Review</span>
+                        </button>
+                        <button onclick="setDirectorTab('classes')" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center space-x-2 ${state.directorTab === 'classes' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}">
+                            <i class="fa-solid fa-users-rectangle"></i>
+                            <span>Classes & 45-Limit</span>
+                        </button>
+                        <button onclick="setDirectorTab('announcements')" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center space-x-2 ${state.directorTab === 'announcements' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}">
+                            <i class="fa-solid fa-bullhorn"></i>
+                            <span>Announcements</span>
+                        </button>
+                    </div>
+
+                    <!-- Director Dynamic Content Area -->
+                    <div id="directorContentArea">
+                        ${getDirectorTabContent()}
+                    </div>
+                </div>
+            `;
+        }
+
+        function setDirectorTab(tab) {
+            state.directorTab = tab;
+            renderDirectorPortal();
+        }
+
+        function getDirectorTabContent() {
+            if (state.directorTab === 'dashboard') {
+                return `
+                    <div class="space-y-6">
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1">Total Applications</p>
+                                <p class="text-3xl font-extrabold text-slate-900">${state.applications.length}</p>
+                                <span class="text-xs text-indigo-600 font-semibold mt-2 inline-block">Active remote queue</span>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1">Approved Enrolled</p>
+                                <p class="text-3xl font-extrabold text-emerald-600">${state.applications.filter(a => a.status === 'Approved').length}</p>
+                                <span class="text-xs text-emerald-600 font-semibold mt-2 inline-block">🟢 Verified & Cleared</span>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1">Pending Review</p>
+                                <p class="text-3xl font-extrabold text-amber-600">${state.applications.filter(a => a.status === 'Pending').length}</p>
+                                <span class="text-xs text-amber-600 font-semibold mt-2 inline-block">🟡 Requires action</span>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1">School Subscription</p>
+                                <p class="text-3xl font-extrabold text-indigo-600">500 ETB</p>
+                                <span class="text-xs text-indigo-600 font-semibold mt-2 inline-block">Fully Paid License</span>
+                            </div>
+                        </div>
+
+                        <!-- Class Enrollment Summary Cards -->
+                        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8">
+                            <h3 class="text-lg font-bold text-slate-900 mb-4">Class Capacity & Stream Distribution (Max 45/Class)</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                ${Object.entries(state.classesData).map(([clsName, info]) => `
+                                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-bold text-slate-900 text-sm">${clsName}</span>
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${info.full ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
+                                                ${info.full ? '🔴 FULL' : '🟢 ' + (info.capacity - info.enrolled) + ' seats'}
+                                            </span>
+                                        </div>
+                                        <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                                            <div class="bg-indigo-600 h-full rounded-full" style="width: ${(info.enrolled / info.capacity) * 100}%"></div>
+                                        </div>
+                                        <p class="text-xs text-slate-500 text-right">${info.enrolled} / ${info.capacity} Enrolled</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (state.directorTab === 'applications') {
+                return `
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8">
+                        <h3 class="text-xl font-bold text-slate-900 mb-2">Student Application & Document Verification</h3>
+                        <p class="text-sm text-slate-500 mb-6">Review uploaded student transcripts, verify Telebirr payment references, and approve or reject applications.</p>
+                        
+                        <div class="space-y-4">
+                            ${state.applications.map(app => `
+                                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="font-bold text-slate-900 text-base">${app.fullName}</span>
+                                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${app.status === 'Approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                                                ${app.status}
+                                            </span>
+                                        </div>
+                                        <p class="text-xs text-slate-600">ID: <b>${app.id}</b> • Grade: <b>${app.gradeApplying}</b> ${app.stream !== 'N/A' ? '• ' + app.stream : ''} • Prev School: ${app.previousSchool}</p>
+                                        <p class="text-xs text-slate-500">Document: <span class="font-semibold text-indigo-600 underline cursor-pointer" onclick="showModal('Document Preview', 'Viewing official uploaded file: ${app.docName}')">${app.docName}</span> • Payment Ref: <span class="font-semibold text-emerald-600">${app.paymentRef}</span></p>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        ${app.status === 'Pending' ? `
+                                            <button onclick="approveApplication('${app.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow transition">
+                                                <i class="fa-solid fa-check mr-1"></i> Approve
+                                            </button>
+                                            <button onclick="rejectApplication('${app.id}')" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow transition">
+                                                <i class="fa-solid fa-xmark mr-1"></i> Reject
+                                            </button>
+                                        ` : `
+                                            <span class="text-xs text-emerald-700 font-bold bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">Verified & Assigned to ${app.assignedClass}</span>
+                                        `}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else if (state.directorTab === 'classes') {
+                return `
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8">
+                        <h3 class="text-xl font-bold text-slate-900 mb-2">Class Capacity & Stream Management (Max 45)</h3>
+                        <p class="text-sm text-slate-500 mb-6">Real-time breakdown of sections, automated rollover status, and grade progression.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${Object.entries(state.classesData).map(([clsName, info]) => `
+                                <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-bold text-slate-900 text-base">${clsName}</h4>
+                                        <p class="text-xs text-slate-500">Capacity limit: 45 students max</p>
+                                        <p class="text-xs font-semibold text-indigo-600 mt-1">${info.enrolled} Enrolled students</p>
+                                    </div>
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold ${info.full ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
+                                        ${info.full ? '🔴 FULL' : '🟢 ' + (info.capacity - info.enrolled) + ' available'}
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 max-w-2xl mx-auto">
+                        <h3 class="text-xl font-bold text-slate-900 mb-2">Publish School Announcement</h3>
+                        <p class="text-sm text-slate-500 mb-6">Announcements appear instantly on all students' mobile dashboards.</p>
+                        
+                        <form onsubmit="handleAnnouncementSubmit(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Announcement Title</label>
+                                <input type="text" id="annTitle" required placeholder="e.g. Mid-term exam schedules" class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Content / Notice</label>
+                                <textarea id="annContent" required rows="4" placeholder="Write full announcement details here..." class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-200 transition">
+                                <i class="fa-solid fa-bullhorn mr-1"></i> Publish Announcement Instantly
+                            </button>
+                        </form>
+                    </div>
+                `;
+            }
+        }
+
+        function approveApplication(appId) {
+            const app = state.applications.find(a => a.id === appId);
+            if (app) {
+                app.status = 'Approved';
+                // Update class enrollment
+                if (state.classesData[app.assignedClass]) {
+                    state.classesData[app.assignedClass].enrolled += 1;
+                    if (state.classesData[app.assignedClass].enrolled >= 45) {
+                        state.classesData[app.assignedClass].full = true;
+                    }
+                }
+                showModal('Application Approved!', `Student ${app.fullName} has been officially approved and enrolled into ${app.assignedClass}.`);
+                renderDirectorPortal();
+            }
+        }
+
+        function rejectApplication(appId) {
+            const app = state.applications.find(a => a.id === appId);
+            if (app) {
+                app.status = 'Rejected';
+                showModal('Application Rejected', `Application ${app.id} was marked incomplete or rejected.`, false);
+                renderDirectorPortal();
+            }
+        }
+
+        function handleAnnouncementSubmit(e) {
+            e.preventDefault();
+            const title = document.getElementById('annTitle').value;
+            const content = document.getElementById('annContent').value;
+            
+            state.announcements.unshift({
+                id: Date.now(),
+                title,
+                content,
+                date: 'Just now',
+                priority: 'high'
+            });
+
+            showModal('Announcement Published!', 'The notice is now live on all student mobile dashboards.');
+            document.getElementById('annTitle').value = '';
+            document.getElementById('annContent').value = '';
+        }
+
+        // --- INITIALIZE ON LOAD ---
+        window.onload = function() {
+            renderHome();
+        };
+    </script>
+</body>
+</html>
